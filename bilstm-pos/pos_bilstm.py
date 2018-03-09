@@ -243,8 +243,7 @@ def train(sentence_words_train, sentence_tags_train, sentence_words_val,
 	    for i, epoch in enumerate(generate_epochs(sentence_words_train, sentence_tags_train, NO_OF_EPOCHS)):
 	        start_time = time.time()
 	        for step, (X, y) in enumerate(epoch):
-				_, summary_value = sess.run([train_op, summary_op], feed_dict=
-										 {m.input_words:X, m.output_tags:y})
+				_, summary_value = sess.run([train_op, summary_op], feed_dict = {m.input_words:X, m.output_tags:y})
 				duration = time.time() - start_time
 				j += 1
 				if j % VALIDATION_FREQUENCY == 0:
