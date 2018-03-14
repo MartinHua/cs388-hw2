@@ -73,11 +73,12 @@ class Model:
 		## Embedd the very large input vector into a smaller dimension
 		## This is for computational tractability
 		with tf.variable_scope("lstm_input"):
-			lstm_input = self.get_embedding(self._input_words)
+			lstm_input = tf.concat([self.get_embedding(self._input_words), self._input_features], 2)
 			c = tf.shape(lstm_input)
 			# Launch the graph in a session.  
 			sess = tf.Session()  
 			print(sess.run(c))
+
 		
 		## Apply bidrectional dyamic rnn to get a tuple of forward
 		## and backward outputs. Using dynamic rnn instead of just 
