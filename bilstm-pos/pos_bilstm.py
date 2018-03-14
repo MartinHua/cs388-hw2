@@ -191,7 +191,7 @@ def generate_epochs(X, y, no_of_epochs):
 	X = X[:lx]
 	y = y[:lx]
 	for i in range(no_of_epochs):
-		shuffle_data(X, y)
+		X,y = shuffle_data(X, y)
 		yield generate_batch(X, y)
 
 ## Compute overall loss and accuracy on dev/test data
@@ -309,6 +309,7 @@ if __name__ == '__main__':
 	X_train, y_train, _ = p.get_processed_data(train_mat, MAX_LENGTH)
 	X_val, y_val, _ = p.get_processed_data(val_mat, MAX_LENGTH)
 	X_test, y_test, _ = p.get_processed_data(test_mat, MAX_LENGTH)
+
 
 	if experiment_type == 'train':
 		if os.path.exists(train_dir):

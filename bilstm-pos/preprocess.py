@@ -3,6 +3,11 @@ from random import shuffle
 
 MAX_LENGTH = 100
 
+suffix_dict = ['age','al','ance','ence','dom','ee','er','or',
+'hood','ism','ist','ity','ty','ment','ness','ry','ship','sion',
+'tion','xion','able','ible','en','ese','ful','ic','ish','ive',
+'ian','less','ly','ous','ate','en','ify','ise','ize']
+
 class PreprocessData:
 
 	def __init__(self, dataset_type='wsj'):
@@ -51,6 +56,17 @@ class PreprocessData:
 				return self.get_unk_id(dic)
 		return dic[pos]
 
+	def get_ortho_features(self, word):
+		ortho_features = 0
+		ortho_features += int(word.istitle()) * (2**0)
+		for suffix in suffix_dict:
+			if word != suffix and word.endswith(suffix):
+				ortho_features += 2**1
+				break
+		ortho_features += int('-' in word) * (2**2)
+		ortho_features += int(word[0].isdigit()) * (2**3)
+		return ortho_features
+	
 	## Process single file to get raw data matrix
 	def processSingleFile(self, inFileName, mode):
 		matrix = []
@@ -76,8 +92,9 @@ class PreprocessData:
 								## get ids for word and pos tag
 								feature = self.get_id(wordPosPair[0], self.vocabulary, mode)
 								# include all pos tags.
-								row.append((feature,self.get_id(wordPosPair[1],
-											self.pos_tags, 'train')))
+								pos_id = self.get_id(wordPosPair[1], self.pos_tags, 'train')
+								ortho_features = self.get_ortho_features(wordPosPair[0])
+								row.append(((feature,ortho_features), pos_id))
 		if row:
 			matrix.append(row)
 		return matrix
@@ -129,3 +146,9 @@ class PreprocessData:
 			X.append(X_row)
 			y.append(y_row)
 		return X, y, no_removed
+
+if __name__ == '__main__':
+	p = PreprocessData()
+	print p.get_ortho_features("1ly")
+	print p.get_ortho_features("C-ap")
+	print p.get_ortho_features("ly")
