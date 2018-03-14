@@ -22,7 +22,7 @@ NO_OF_EPOCHS = 6
 ## https://github.com/monikkinom/ner-lstm/
 class Model:
 	def __init__(self, input_dim, sequence_len, output_dim,
-				 hidden_state_size=300):
+				 hidden_state_size=304):#################################################################################################
 		self._input_dim = input_dim
 		self._sequence_len = sequence_len
 		self._output_dim = output_dim
@@ -51,7 +51,7 @@ class Model:
 	## to make the lstm learning tractable
 	def get_embedding(self, input_):
 		embedding = tf.get_variable("embedding", 
-							[self._input_dim,self._hidden_state_size ], dtype=tf.float32)
+							[self._input_dim,self._hidden_state_size-4], dtype=tf.float32)
 		return tf.nn.embedding_lookup(embedding,tf.cast(input_, tf.int32))
 
 	# Adapted from https://github.com/monikkinom/ner-lstm/blob/master/model.py __init__ function
@@ -73,7 +73,7 @@ class Model:
 		## Embedd the very large input vector into a smaller dimension
 		## This is for computational tractability
 		with tf.variable_scope("lstm_input"):
-			lstm_input = tf.concat([self.get_embedding(self._input_words), self._input_features], 2)
+			lstm_input = tf.concat([self.get_embedding(self._input_words), tf.cast(self._input_features, tf.float32)], 2)
 			c = tf.shape(lstm_input)
 			# Launch the graph in a session.  
 			sess = tf.Session()  
