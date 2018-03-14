@@ -73,7 +73,7 @@ class Model:
 		## Embedd the very large input vector into a smaller dimension
 		## This is for computational tractability
 		with tf.variable_scope("lstm_input"):
-			lstm_input = self.get_embedding(self._input_words)cast
+			lstm_input = self.get_embedding(self._input_words)
 			c = tf.shape(lstm_input)
 			# Launch the graph in a session.  
 			sess = tf.Session()  
