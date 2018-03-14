@@ -74,6 +74,8 @@ class Model:
 		## This is for computational tractability
 		with tf.variable_scope("lstm_input"):
 			lstm_input = self.get_embedding(self._input_words)
+			print(tf.size(lstm_input))
+			print(lstm_input.size())
 		
 		## Apply bidrectional dyamic rnn to get a tuple of forward
 		## and backward outputs. Using dynamic rnn instead of just 
@@ -209,7 +211,7 @@ def compute_summary_metrics(sess, m, sentence_words_val, sentence_tags_val, sent
 		for step, (X, y, Z) in enumerate(epoch):
 			batch_loss, batch_accuracy, batch_len = \
 			sess.run([m.loss, m.accuracy, m.total_length], \
-					feed_dict={m.input_words:X, m.output_tags:y})################
+					feed_dict={m.input_words:X, m.output_tags:y, m.input_features:Z})
 			loss += batch_loss
 			accuracy += batch_accuracy
 			total_len += batch_len
@@ -251,7 +253,7 @@ def train(sentence_words_train, sentence_tags_train, sentence_features_train, se
 	    for i, epoch in enumerate(generate_epochs(sentence_words_train, sentence_tags_train, sentence_features_train, NO_OF_EPOCHS)):
 	        start_time = time.time()
 	        for step, (X, y, Z) in enumerate(epoch):
-				_, summary_value = sess.run([train_op, summary_op], feed_dict = {m.input_words:X, m.output_tags:y, m.input_features:Z})##################
+				_, summary_value = sess.run([train_op, summary_op], feed_dict = {m.input_words:X, m.output_tags:y, m.input_features:Z})
 				duration = time.time() - start_time
 				j += 1
 				if j % VALIDATION_FREQUENCY == 0:
