@@ -150,9 +150,11 @@ class PreprocessData:
 			## Padded ortho_features by -1
 			Z_row = Z_row + [[-1, -1, -1, -1]]*(max_size-len(Z_row))
 			print(Z_row)
+			print(X_row)
 			X.append(X_row)
 			y.append(y_row)
 			Z.append(Z_row)
+		print(X)
 		return X, y, Z, no_removed
 
 if __name__ == '__main__':
