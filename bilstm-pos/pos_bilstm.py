@@ -32,11 +32,12 @@ class Model:
 	# Adapted from https://github.com/monikkinom/ner-lstm/blob/master/model.py __init__ function
 	def create_placeholders(self):
 		self._input_words = tf.placeholder(tf.int32, [BATCH_SIZE, self._sequence_len])
+		self._input_features = tf.placeholder(tf.int32, [BATCH_SIZE, self._sequence_len, 4])
 		self._output_tags = tf.placeholder(tf.int32, [BATCH_SIZE, self._sequence_len])
 
-	def set_input_output(self, input_, output):
-		self._input_words = input_
-		self._output_tags = output
+	# def set_input_output(self, input_, output):
+	# 	self._input_words = input_
+	# 	self._output_tags = output
 	
 	## Returns the mask that is 1 for the actual words
 	## and 0 for the padded part
@@ -159,6 +160,10 @@ class Model:
 	@property
 	def input_words(self):
 		return self._input_words
+	
+	@property
+	def input_features(self):
+		return self._input_features
 
 	@property
 	def output_tags(self):
@@ -246,7 +251,7 @@ def train(sentence_words_train, sentence_tags_train, sentence_features_train, se
 	    for i, epoch in enumerate(generate_epochs(sentence_words_train, sentence_tags_train, sentence_features_train, NO_OF_EPOCHS)):
 	        start_time = time.time()
 	        for step, (X, y, Z) in enumerate(epoch):
-				_, summary_value = sess.run([train_op, summary_op], feed_dict = {m.input_words:X, m.output_tags:y})##################
+				_, summary_value = sess.run([train_op, summary_op], feed_dict = {m.input_words:X, m.output_tags:y, m.input_features:Z})##################
 				duration = time.time() - start_time
 				j += 1
 				if j % VALIDATION_FREQUENCY == 0:
