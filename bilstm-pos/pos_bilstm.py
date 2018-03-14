@@ -75,7 +75,6 @@ class Model:
 		with tf.variable_scope("lstm_input"):
 			lstm_input = self.get_embedding(self._input_words)
 			print(tf.size(lstm_input))
-			print(lstm_input.size())
 		
 		## Apply bidrectional dyamic rnn to get a tuple of forward
 		## and backward outputs. Using dynamic rnn instead of just 
