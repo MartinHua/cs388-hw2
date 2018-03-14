@@ -194,7 +194,7 @@ def generate_epochs(X, y, Z, no_of_epochs):
 	y = y[:lx]
 	Z = Z[:lx, :]
 	for i in range(no_of_epochs):
-		X, y = shuffle_data(X, y, Z)
+		X, y, Z= shuffle_data(X, y, Z)
 		yield generate_batch(X, y, Z)
 
 ## Compute overall loss and accuracy on dev/test data
