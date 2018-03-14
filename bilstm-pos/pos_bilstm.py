@@ -179,12 +179,12 @@ class Model:
 # Adapted from http://r2rt.com/recurrent-neural-networks-in-tensorflow-i.html
 def generate_batch(X, y, Z):
 	for i in xrange(0, len(X), BATCH_SIZE):
-		yield X[i:i+BATCH_SIZE], y[i:i+BATCH_SIZE], Z[i:i+BATCH_SIZE, :]
+		yield X[i:i+BATCH_SIZE], y[i:i+BATCH_SIZE], Z[i:i+BATCH_SIZE]
 
 def shuffle_data(X, y, Z):
 	ran = range(len(X))
 	shuffle(ran)
-	return [X[num] for num in ran], [y[num] for num in ran], [Z[num, :] for num in ran]
+	return [X[num] for num in ran], [y[num] for num in ran], [Z[num] for num in ran]
 
 # Adapted from http://r2rt.com/recurrent-neural-networks-in-tensorflow-i.html
 def generate_epochs(X, y, Z, no_of_epochs):
@@ -192,7 +192,7 @@ def generate_epochs(X, y, Z, no_of_epochs):
 	lx = (lx//BATCH_SIZE)*BATCH_SIZE
 	X = X[:lx]
 	y = y[:lx]
-	Z = Z[:lx, :]
+	Z = Z[:lx]
 	for i in range(no_of_epochs):
 		X, y, Z= shuffle_data(X, y, Z)
 		yield generate_batch(X, y, Z)
