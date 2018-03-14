@@ -58,7 +58,7 @@ class PreprocessData:
 
 	def get_ortho_features(self, word):
 		ortho_features = 0
-		ortho_features += int(word = word.capitalize()) * (2**0)
+		ortho_features += int(word == word.capitalize() and not (word[0].isdigit())) * (2**0)
 		for suffix in suffix_dict:
 			if word != suffix and word.endswith(suffix):
 				ortho_features += 2**1
