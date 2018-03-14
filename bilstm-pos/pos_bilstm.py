@@ -74,7 +74,9 @@ class Model:
 		## This is for computational tractability
 		with tf.variable_scope("lstm_input"):
 			lstm_input = self.get_embedding(self._input_words)
-			print(tf.size(lstm_input))
+			print tf.shape(lstm_input)
+			if (tf.shape(lstm_input) == [self._hidden_state_size, BATCH_SIZE, self._sequence_len]):
+				exit(1)
 		
 		## Apply bidrectional dyamic rnn to get a tuple of forward
 		## and backward outputs. Using dynamic rnn instead of just 
