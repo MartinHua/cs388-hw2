@@ -152,7 +152,7 @@ class PreprocessData:
 			X.append(X_row)
 			y.append(y_row)
 			Z.append(Z_row)
-		return X, y, no_removed
+		return X, y, Z, no_removed
 
 if __name__ == '__main__':
 	p = PreprocessData()

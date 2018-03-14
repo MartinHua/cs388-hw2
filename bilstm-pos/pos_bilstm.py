@@ -177,33 +177,34 @@ class Model:
 		return self._total_length
 
 # Adapted from http://r2rt.com/recurrent-neural-networks-in-tensorflow-i.html
-def generate_batch(X, y):
+def generate_batch(X, y, Z):
 	for i in xrange(0, len(X), BATCH_SIZE):
-		yield X[i:i+BATCH_SIZE], y[i:i+BATCH_SIZE]
+		yield X[i:i+BATCH_SIZE], y[i:i+BATCH_SIZE], Z[i:i+BATCH_SIZE, :]
 
-def shuffle_data(X, y):
+def shuffle_data(X, y, Z):
 	ran = range(len(X))
 	shuffle(ran)
-	return [X[num] for num in ran], [y[num] for num in ran]
+	return [X[num] for num in ran], [y[num] for num in ran], [Z[num, :] for num in ran]
 
 # Adapted from http://r2rt.com/recurrent-neural-networks-in-tensorflow-i.html
-def generate_epochs(X, y, no_of_epochs):
+def generate_epochs(X, y, Z, no_of_epochs):
 	lx = len(X)
 	lx = (lx//BATCH_SIZE)*BATCH_SIZE
 	X = X[:lx]
 	y = y[:lx]
+	Z = Z[:lx, :]
 	for i in range(no_of_epochs):
-		X,y = shuffle_data(X, y)
-		yield generate_batch(X, y)
+		X, y = shuffle_data(X, y, Z)
+		yield generate_batch(X, y, Z)
 
 ## Compute overall loss and accuracy on dev/test data
-def compute_summary_metrics(sess, m,sentence_words_val, sentence_tags_val):
+def compute_summary_metrics(sess, m, sentence_words_val, sentence_tags_val, sentence_features_val):
 	loss, accuracy, total_len = 0.0, 0.0, 0
-	for i, epoch in enumerate(generate_epochs(sentence_words_val, sentence_tags_val, 1)):
-		for step, (X, y) in enumerate(epoch):
+	for i, epoch in enumerate(generate_epochs(sentence_words_val, sentence_tags_val, sentence_features_val, 1)):
+		for step, (X, y, Z) in enumerate(epoch):
 			batch_loss, batch_accuracy, batch_len = \
 			sess.run([m.loss, m.accuracy, m.total_length], \
-					feed_dict={m.input_words:X, m.output_tags:y})
+					feed_dict={m.input_words:X, m.output_tags:y})################
 			loss += batch_loss
 			accuracy += batch_accuracy
 			total_len += batch_len
@@ -213,8 +214,8 @@ def compute_summary_metrics(sess, m,sentence_words_val, sentence_tags_val):
 
 ## train and test adapted from https://github.com/tensorflow/tensorflow/blob/master/tensorflow/
 ## models/image/cifar10/cifar10_train.py and cifar10_eval.py
-def train(sentence_words_train, sentence_tags_train, sentence_words_val,
-		  sentence_tags_val, vocab_size, no_pos_classes, train_dir):
+def train(sentence_words_train, sentence_tags_train, sentence_features_train, sentence_words_val,
+		  sentence_tags_val, sentence_features_val, vocab_size, no_pos_classes, train_dir):
 	m = Model(vocab_size, MAX_LENGTH, no_pos_classes)
 	with tf.Graph().as_default():
 	    global_step = tf.Variable(0, trainable=False)
@@ -242,14 +243,14 @@ def train(sentence_words_train, sentence_tags_train, sentence_words_val,
 
 	    summary_writer = tf.summary.FileWriter(train_dir, sess.graph)
 	    j = 0
-	    for i, epoch in enumerate(generate_epochs(sentence_words_train, sentence_tags_train, NO_OF_EPOCHS)):
+	    for i, epoch in enumerate(generate_epochs(sentence_words_train, sentence_tags_train, sentence_features_train, NO_OF_EPOCHS)):
 	        start_time = time.time()
-	        for step, (X, y) in enumerate(epoch):
-				_, summary_value = sess.run([train_op, summary_op], feed_dict = {m.input_words:X, m.output_tags:y})
+	        for step, (X, y, Z) in enumerate(epoch):
+				_, summary_value = sess.run([train_op, summary_op], feed_dict = {m.input_words:X, m.output_tags:y})##################
 				duration = time.time() - start_time
 				j += 1
 				if j % VALIDATION_FREQUENCY == 0:
-					val_loss, val_accuracy = compute_summary_metrics(sess, m, sentence_words_val, sentence_tags_val)
+					val_loss, val_accuracy = compute_summary_metrics(sess, m, sentence_words_val, sentence_tags_val, sentence_features_val)
 					summary = tf.Summary()
 					summary.ParseFromString(summary_value)
 					summary.value.add(tag='Validation Loss', simple_value=val_loss)
@@ -267,7 +268,7 @@ def train(sentence_words_train, sentence_tags_train, sentence_words_val,
 ## Check performance on held out test data
 ## Loads most recent model from train_dir
 ## and applies it on test data
-def test(sentence_words_test, sentence_tags_test,
+def test(sentence_words_test, sentence_tags_test, sentence_features_test
 		 vocab_size, no_pos_classes, train_dir):
 	m = Model(vocab_size, MAX_LENGTH, no_pos_classes)
 	with tf.Graph().as_default():
@@ -282,7 +283,7 @@ def test(sentence_words_test, sentence_tags_test,
 
 				global_step = ckpt.model_checkpoint_path.split('/')[-1].split('-')[-1]
 			test_loss, test_accuracy = compute_summary_metrics(sess, m, sentence_words_test,
-															   sentence_tags_test)
+															   sentence_tags_test, sentence_features_test)
 			print 'Test Accuracy: {:.3f}'.format(test_accuracy)
 			print 'Test Loss: {:.3f}'.format(test_loss)
 
@@ -308,15 +309,15 @@ if __name__ == '__main__':
 	val_mat = p.get_raw_data(val_files, 'validation')
 	test_mat = p.get_raw_data(test_files, 'test')
 
-	X_train, y_train, _ = p.get_processed_data(train_mat, MAX_LENGTH)
-	X_val, y_val, _ = p.get_processed_data(val_mat, MAX_LENGTH)
-	X_test, y_test, _ = p.get_processed_data(test_mat, MAX_LENGTH)
+	X_train, y_train, Z_train, _ = p.get_processed_data(train_mat, MAX_LENGTH)
+	X_val, y_val, Z_val, _ = p.get_processed_data(val_mat, MAX_LENGTH)
+	X_test, y_test, Z_test, _ = p.get_processed_data(test_mat, MAX_LENGTH)
 
 
 	if experiment_type == 'train':
 		if os.path.exists(train_dir):
 			shutil.rmtree(train_dir)
 		os.mkdir(train_dir)
-		train(X_train, y_train, X_val, y_val, len(p.vocabulary)+2, len(p.pos_tags)+1, train_dir)
+		train(X_train, y_train, Z_train, X_val, y_val, Z_val, len(p.vocabulary)+2, len(p.pos_tags)+1, train_dir)
 	else:
-		test(X_test, y_test, len(p.vocabulary)+2, len(p.pos_tags)+1, train_dir)
+		test(X_test, y_test, Z_test, len(p.vocabulary)+2, len(p.pos_tags)+1, train_dir)
