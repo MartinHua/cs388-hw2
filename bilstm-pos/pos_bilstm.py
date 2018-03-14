@@ -31,7 +31,7 @@ class Model:
 
 	# Adapted from https://github.com/monikkinom/ner-lstm/blob/master/model.py __init__ function
 	def create_placeholders(self):
-		self._input_words = tf.placeholder(tf.int32, [BATCH_SIZE, self._sequence_len])
+		self._input_words = tf.placeholder(tf.int32, [BATCH_SIZE, self._sequence_len*2])
 		self._output_tags = tf.placeholder(tf.int32, [BATCH_SIZE, self._sequence_len])
 
 	def set_input_output(self, input_, output):
@@ -65,6 +65,7 @@ class Model:
 		## the actual length of every instance in the batch
 		## so that the backward lstm works properly
 		self._mask, self._lengths = self.get_mask(self._output_tags)
+		# self._oov_mask, self._oov_lenghs = self.get_mask(self._input_words, self._input_dim-2)
 		self._total_length = tf.reduce_sum(self._lengths)
 
 
@@ -99,6 +100,7 @@ class Model:
 
 		self._loss = self.cost( self._output_tags, self._probabilities)
 		self._accuracy = self.compute_accuracy( self._output_tags, self._probabilities, self._mask)
+		
 		self._average_accuracy = self._accuracy/tf.cast(self._total_length, tf.float32)
 		self._average_loss = self._loss/tf.cast(self._total_length, tf.float32)
 

@@ -57,14 +57,16 @@ class PreprocessData:
 		return dic[pos]
 
 	def get_ortho_features(self, word):
-		ortho_features = 0
-		ortho_features += int(word == word.capitalize() and not (word[0].isdigit())) * (2**0)
+		ortho_features = []
+		ortho_features.append( int(word == word.capitalize() and not(word[0].isdigit())) )
 		for suffix in suffix_dict:
 			if word != suffix and word.endswith(suffix):
-				ortho_features += 2**1
+				ortho_features.append(1)
 				break
-		ortho_features += int('-' in word) * (2**2)
-		ortho_features += int(word[0].isdigit()) * (2**3)
+		if len(ortho_features) == 1:
+			ortho_features.append(0)
+		ortho_features.append(int('-' in word))
+		ortho_features.append(int(word[0].isdigit()))
 		return ortho_features
 	
 	## Process single file to get raw data matrix
@@ -94,7 +96,7 @@ class PreprocessData:
 								# include all pos tags.
 								pos_id = self.get_id(wordPosPair[1], self.pos_tags, 'train')
 								ortho_features = self.get_ortho_features(wordPosPair[0])
-								row.append(((feature,ortho_features), pos_id))
+								row.append((feature, pos_id, ortho_features))
 		if row:
 			matrix.append(row)
 		return matrix
@@ -133,18 +135,24 @@ class PreprocessData:
 	def get_processed_data(self, mat, max_size):
 		X = []
 		y = []
+		Z = []
 		original_len = len(mat)
 		mat = filter(lambda x: len(x) <= max_size, mat)
 		no_removed = original_len - len(mat)
 		for row in mat:
 			X_row = [tup[0] for tup in row]
 			y_row = [tup[1] for tup in row]
+			Z_row = [tup[2] for tup in row]
 			## padded words represented by len(vocab) + 1
 			X_row = X_row + [self.get_pad_id(self.vocabulary)]*(max_size - len(X_row))
 			## Padded pos tags represented by -1
 			y_row = y_row + [-1]*(max_size-len(y_row))
+			## Padded ortho_features by -1
+			Z_row = Z_row + [[-1, -1, -1, -1]]*(max_size-len(Z_row))
+			X_row = X_row + Z_row
 			X.append(X_row)
 			y.append(y_row)
+			Z.append(Z_row)
 		return X, y, no_removed
 
 if __name__ == '__main__':
