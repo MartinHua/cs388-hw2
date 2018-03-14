@@ -268,8 +268,7 @@ def train(sentence_words_train, sentence_tags_train, sentence_features_train, se
 ## Check performance on held out test data
 ## Loads most recent model from train_dir
 ## and applies it on test data
-def test(sentence_words_test, sentence_tags_test, sentence_features_test
-		 vocab_size, no_pos_classes, train_dir):
+def test(sentence_words_test, sentence_tags_test, sentence_features_test, vocab_size, no_pos_classes, train_dir):
 	m = Model(vocab_size, MAX_LENGTH, no_pos_classes)
 	with tf.Graph().as_default():
 		global_step = tf.Variable(0, trainable=False)
