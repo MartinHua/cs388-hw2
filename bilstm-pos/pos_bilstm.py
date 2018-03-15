@@ -281,12 +281,12 @@ def train(sentence_words_train, sentence_tags_train, sentence_features_train, se
 	    sess = tf.Session(config=tf.ConfigProto())
 	    sess.run(init)
 
-	    summary_writer = tf.summary.FileWriter(train_dir, sess.graph)
-	    j = 0
-		
+		summary_writer = tf.summary.FileWriter(train_dir, sess.graph)
+		j = 0
+
 		start_time = time.time()
-	    for i, epoch in enumerate(generate_epochs(sentence_words_train, sentence_tags_train, sentence_features_train, NO_OF_EPOCHS)):
-	        for step, (X, y, Z) in enumerate(epoch):
+		for i, epoch in enumerate(generate_epochs(sentence_words_train, sentence_tags_train, sentence_features_train, NO_OF_EPOCHS)):
+			for step, (X, y, Z) in enumerate(epoch):
 				_, summary_value = sess.run([train_op, summary_op], feed_dict = {m.input_words:X, m.output_tags:y, m.input_features:Z})
 				duration = time.time() - start_time
 				j += 1
