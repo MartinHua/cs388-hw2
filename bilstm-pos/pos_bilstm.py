@@ -49,7 +49,7 @@ class Model:
 		return mask, lengths
 
 	def get_oov_mask(self, t):
-		mask = tf.cast(tf.equal(t, self.input_dim-2), tf.int32)
+		mask = tf.cast(tf.equal(t, self._input_dim-2), tf.int32)
 		lengths = tf.reduce_sum(mask, reduction_indices=1)
 		return mask, lengths
 
