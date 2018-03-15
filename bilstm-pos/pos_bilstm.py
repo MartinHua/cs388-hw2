@@ -48,6 +48,11 @@ class Model:
 		lengths = tf.reduce_sum(mask, reduction_indices=1)
 		return mask, lengths
 
+	def get_oov_mask(self, t):
+		mask = tf.cast(tf.equal(t, self.input_dim-2), tf.int32)
+		lengths = tf.reduce_sum(mask, reduction_indices=1)
+		return mask, lengths
+
 	## Embed the large one hot input vector into a smaller space
 	## to make the lstm learning tractable
 	def get_embedding(self, input_):
@@ -70,8 +75,9 @@ class Model:
 		## the actual length of every instance in the batch
 		## so that the backward lstm works properly
 		self._mask, self._lengths = self.get_mask(self._output_tags)
-		# self._oov_mask, self._oov_lenghs = self.get_mask(self._input_words, self._input_dim-2)
+		self._oov_mask, self._oov_lenghs = self.get_oov_mask(self._input_words)
 		self._total_length = tf.reduce_sum(self._lengths)
+		self._total_oov_length = tf.reduce_sum(self._oov_lenghs)
 
 
 		## Embedd the very large input vector into a smaller dimension
@@ -117,6 +123,7 @@ class Model:
 
 		self._loss = self.cost( self._output_tags, self._probabilities)
 		self._accuracy = self.compute_accuracy( self._output_tags, self._probabilities, self._mask)
+		self._oov_accuracy = self.compute_accuracy( self._output_tags, self._probabilities, self._oov_mask)
 		
 		self._average_accuracy = self._accuracy/tf.cast(self._total_length, tf.float32)
 		self._average_loss = self._loss/tf.cast(self._total_length, tf.float32)
@@ -144,6 +151,7 @@ class Model:
 
 	def add_accuracy_summary(self):
 		tf.summary.scalar('Accuracy', self._average_accuracy)
+	
 
 	# Taken from https://github.com/monikkinom/ner-lstm/blob/master/model.py __init__ function
 	def get_train_op(self, loss, global_step):
@@ -160,8 +168,8 @@ class Model:
 		correct_predictions = tf.multiply(correct_predictions, mask)
 		return tf.cast(tf.reduce_sum(correct_predictions), tf.float32)
 
-	def get_total_length():
-		return self.total_length
+	# def get_total_length():
+	# 	return self.total_length
 
 	# Adapted from https://github.com/monikkinom/ner-lstm/blob/master/model.py cost function
 	def cost(self, pos_classes, probabilities):
@@ -192,10 +200,18 @@ class Model:
 	@property
 	def accuracy(self):
 		return self._accuracy
+	
+	@property
+	def oov_accuracy(self):
+		return self._oov_accuracy
 
 	@property
 	def total_length(self):
 		return self._total_length
+	
+	@property
+	def total_oov_length(self):
+		return self._total_oov_length
 
 # Adapted from http://r2rt.com/recurrent-neural-networks-in-tensorflow-i.html
 def generate_batch(X, y, Z):
@@ -220,18 +236,21 @@ def generate_epochs(X, y, Z, no_of_epochs):
 
 ## Compute overall loss and accuracy on dev/test data
 def compute_summary_metrics(sess, m, sentence_words_val, sentence_tags_val, sentence_features_val):
-	loss, accuracy, total_len = 0.0, 0.0, 0
+	loss, accuracy, oov_accuracy, total_len, total_oov_len= 0.0, 0.0, 0.0, 0, 0
 	for i, epoch in enumerate(generate_epochs(sentence_words_val, sentence_tags_val, sentence_features_val, 1)):
 		for step, (X, y, Z) in enumerate(epoch):
-			batch_loss, batch_accuracy, batch_len = \
-			sess.run([m.loss, m.accuracy, m.total_length], \
+			batch_loss, batch_accuracy, batch_oov_accuracy, batch_len, batch_oov_len= \
+			sess.run([m.loss, m.accuracy, m.oov_accuracy, m.total_length, m.total_oov_length], \
 					feed_dict={m.input_words:X, m.output_tags:y, m.input_features:Z})
 			loss += batch_loss
 			accuracy += batch_accuracy
+			oov_accuracy += batch_oov_accuracy
 			total_len += batch_len
+			total_oov_len += batch_oov_len
 	loss = loss/total_len if total_len != 0 else 0
 	accuracy = accuracy/total_len if total_len != 0 else 1
-	return loss, accuracy
+	oov_accuracy = oov_accuracy/total_oov_len if total_oov_len != 0 else 1
+	return loss, accuracy, oov_accuracy
 
 ## train and test adapted from https://github.com/tensorflow/tensorflow/blob/master/tensorflow/
 ## models/image/cifar10/cifar10_train.py and cifar10_eval.py
@@ -271,14 +290,15 @@ def train(sentence_words_train, sentence_tags_train, sentence_features_train, se
 				duration = time.time() - start_time
 				j += 1
 				if j % VALIDATION_FREQUENCY == 0:
-					val_loss, val_accuracy = compute_summary_metrics(sess, m, sentence_words_val, sentence_tags_val, sentence_features_val)
+					val_loss, val_accuracy, val_oov_accuracy = compute_summary_metrics(sess, m, sentence_words_val, sentence_tags_val, sentence_features_val)
 					summary = tf.Summary()
 					summary.ParseFromString(summary_value)
 					summary.value.add(tag='Validation Loss', simple_value=val_loss)
 					summary.value.add(tag='Validation Accuracy', simple_value=val_accuracy)
+					summary.value.add(tag='Validation OOV Accuracy', simple_value=val_oov_accuracy)
 					summary_writer.add_summary(summary, j)
-					log_string = '{} batches ====> Validation Accuracy {:.3f}, Validation Loss {:.3f}'
-					print log_string.format(j, val_accuracy, val_loss)
+					log_string = '{} batches ====> Validation Accuracy {:.3f}, Validation Loss {:.3f}, Validation OOV Accuracy {:.3f}'
+					print log_string.format(j, val_accuracy, val_loss, val_oov_accuracy)
 				else:
 					summary_writer.add_summary(summary_value, j)
 
@@ -300,12 +320,12 @@ def test(sentence_words_test, sentence_tags_test, sentence_features_test, vocab_
 			ckpt = tf.train.get_checkpoint_state(train_dir)
 			if ckpt and ckpt.model_checkpoint_path:
 				saver.restore(sess, ckpt.model_checkpoint_path)
-
 				global_step = ckpt.model_checkpoint_path.split('/')[-1].split('-')[-1]
-			test_loss, test_accuracy = compute_summary_metrics(sess, m, sentence_words_test,
-															   sentence_tags_test, sentence_features_test)
+			
+			test_loss, test_accuracy, test_oov_accuracy = compute_summary_metrics(sess, m, sentence_words_test, sentence_tags_test, sentence_features_test)
 			print 'Test Accuracy: {:.3f}'.format(test_accuracy)
 			print 'Test Loss: {:.3f}'.format(test_loss)
+			print 'Test OOV Accuracy: {:.3f}'.format(test_oov_accuracy)
 
 
 if __name__ == '__main__':
