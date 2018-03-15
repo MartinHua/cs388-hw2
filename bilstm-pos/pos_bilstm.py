@@ -22,11 +22,12 @@ NO_OF_EPOCHS = 6
 ## https://github.com/monikkinom/ner-lstm/
 class Model:
 	def __init__(self, input_dim, sequence_len, output_dim,
-				 hidden_state_size=304):#################################################################################################
+				 hidden_state_size=300):#################################################################################################
 		self._input_dim = input_dim
 		self._sequence_len = sequence_len
 		self._output_dim = output_dim
 		self._hidden_state_size = hidden_state_size
+		self._hidden_state_size_all = self._hidden_state_size
 		self._optimizer = tf.train.AdamOptimizer(0.0005)
 
 	# Adapted from https://github.com/monikkinom/ner-lstm/blob/master/model.py __init__ function
@@ -51,16 +52,19 @@ class Model:
 	## to make the lstm learning tractable
 	def get_embedding(self, input_):
 		embedding = tf.get_variable("embedding", 
-							[self._input_dim,self._hidden_state_size-4], dtype=tf.float32)
+							[self._input_dim,self._hidden_state_size], dtype=tf.float32)
 		return tf.nn.embedding_lookup(embedding,tf.cast(input_, tf.int32))
 
 	# Adapted from https://github.com/monikkinom/ner-lstm/blob/master/model.py __init__ function
-	def create_graph(self):
+	def create_graph(self, add_feature_type):
 		self.create_placeholders()
+		
+		if add_feature_type == "input":
+			self._hidden_state_size_all += 4
 
 		## Create forward and backward cell
-		forward_cell = tf.contrib.rnn.LSTMCell(self._hidden_state_size, state_is_tuple=True)
-		backward_cell = tf.contrib.rnn.LSTMCell(self._hidden_state_size, state_is_tuple=True)
+		forward_cell = tf.contrib.rnn.LSTMCell(self._hidden_state_size_all, state_is_tuple=True)
+		backward_cell = tf.contrib.rnn.LSTMCell(self._hidden_state_size_all, state_is_tuple=True)
 
 		## Since we are padding the input, we need to give
 		## the actual length of every instance in the batch
@@ -73,9 +77,11 @@ class Model:
 		## Embedd the very large input vector into a smaller dimension
 		## This is for computational tractability
 		with tf.variable_scope("lstm_input"):
-			lstm_input = tf.concat([self.get_embedding(self._input_words), tf.cast(self._input_features, tf.float32)], 2)
+			if add_feature_type == "input":
+				lstm_input = tf.concat([self.get_embedding(self._input_words), tf.cast(self._input_features, tf.float32)], 2)
+			else:
+				lstm_input = self.get_embedding(self._input_words)
 			c = tf.shape(lstm_input)
-			# Launch the graph in a session.  
 			sess = tf.Session()  
 			print(sess.run(c))
 
@@ -92,8 +98,7 @@ class Model:
 		with tf.variable_scope("lstm_output"):
 			## concat forward and backward states
 			outputs = tf.concat(outputs, 2)
-			
-			
+					
 			## Apply linear transformation to get logits(unnormalized scores)
 			logits = self.compute_logits(outputs)
 
@@ -225,7 +230,7 @@ def compute_summary_metrics(sess, m, sentence_words_val, sentence_tags_val, sent
 ## train and test adapted from https://github.com/tensorflow/tensorflow/blob/master/tensorflow/
 ## models/image/cifar10/cifar10_train.py and cifar10_eval.py
 def train(sentence_words_train, sentence_tags_train, sentence_features_train, sentence_words_val,
-		  sentence_tags_val, sentence_features_val, vocab_size, no_pos_classes, train_dir):
+		  sentence_tags_val, sentence_features_val, vocab_size, no_pos_classes, train_dir, add_feature_type):
 	m = Model(vocab_size, MAX_LENGTH, no_pos_classes)
 	with tf.Graph().as_default():
 	    global_step = tf.Variable(0, trainable=False)
@@ -233,7 +238,7 @@ def train(sentence_words_train, sentence_tags_train, sentence_features_train, se
 	    ## Add input/output placeholders
 	    m.create_placeholders()
 	    ## create the model graph
-	    m.create_graph()
+	    m.create_graph(add_feature_type)
 	    ## create training op
 	    train_op = m.get_train_op(m.loss, global_step)
 
@@ -278,12 +283,12 @@ def train(sentence_words_train, sentence_tags_train, sentence_features_train, se
 ## Check performance on held out test data
 ## Loads most recent model from train_dir
 ## and applies it on test data
-def test(sentence_words_test, sentence_tags_test, sentence_features_test, vocab_size, no_pos_classes, train_dir):
+def test(sentence_words_test, sentence_tags_test, sentence_features_test, vocab_size, no_pos_classes, train_dir, add_feature_type):
 	m = Model(vocab_size, MAX_LENGTH, no_pos_classes)
 	with tf.Graph().as_default():
 		global_step = tf.Variable(0, trainable=False)
 		m.create_placeholders()
-		m.create_graph()
+		m.create_graph(add_feature_type)
 		saver = tf.train.Saver(tf.global_variables())
 		with tf.Session() as sess:
 			ckpt = tf.train.get_checkpoint_state(train_dir)
@@ -302,6 +307,7 @@ if __name__ == '__main__':
 	train_dir = sys.argv[2]
 	split_type = sys.argv[3]
 	experiment_type = sys.argv[4]
+	add_feature_type = sys.argv[5]
 
 	p = PreprocessData(dataset_type='wsj')
 
@@ -327,6 +333,6 @@ if __name__ == '__main__':
 		if os.path.exists(train_dir):
 			shutil.rmtree(train_dir)
 		os.mkdir(train_dir)
-		train(X_train, y_train, Z_train, X_val, y_val, Z_val, len(p.vocabulary)+2, len(p.pos_tags)+1, train_dir)
+		train(X_train, y_train, Z_train, X_val, y_val, Z_val, len(p.vocabulary)+2, len(p.pos_tags)+1, train_dir, add_feature_type)
 	else:
-		test(X_test, y_test, Z_test, len(p.vocabulary)+2, len(p.pos_tags)+1, train_dir)
+		test(X_test, y_test, Z_test, len(p.vocabulary)+2, len(p.pos_tags)+1, train_dir, add_feature_type)
