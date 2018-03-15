@@ -258,28 +258,28 @@ def train(sentence_words_train, sentence_tags_train, sentence_features_train, se
 		  sentence_tags_val, sentence_features_val, vocab_size, no_pos_classes, train_dir, add_feature_type):
 	m = Model(vocab_size, MAX_LENGTH, no_pos_classes)
 	with tf.Graph().as_default():
-	    global_step = tf.Variable(0, trainable=False)
-	    
-	    ## Add input/output placeholders
-	    m.create_placeholders()
-	    ## create the model graph
-	    m.create_graph(add_feature_type)
-	    ## create training op
-	    train_op = m.get_train_op(m.loss, global_step)
+		global_step = tf.Variable(0, trainable=False)
 
-	    ## create saver object which helps in checkpointing
-	    ## the model
-	    saver = tf.train.Saver(tf.global_variables()+tf.local_variables())
+		## Add input/output placeholders
+		m.create_placeholders()
+		## create the model graph
+		m.create_graph(add_feature_type)
+		## create training op
+		train_op = m.get_train_op(m.loss, global_step)
 
-	    ## add scalar summaries for loss, accuracy
-	    m.add_accuracy_summary()
-	    m.add_loss_summary()
-	    summary_op = tf.summary.merge_all()
+		## create saver object which helps in checkpointing
+		## the model
+		saver = tf.train.Saver(tf.global_variables()+tf.local_variables())
 
-	    ## Initialize all the variables
-	    init = tf.global_variables_initializer()
-	    sess = tf.Session(config=tf.ConfigProto())
-	    sess.run(init)
+		## add scalar summaries for loss, accuracy
+		m.add_accuracy_summary()
+		m.add_loss_summary()
+		summary_op = tf.summary.merge_all()
+
+		## Initialize all the variables
+		init = tf.global_variables_initializer()
+		sess = tf.Session(config=tf.ConfigProto())
+		sess.run(init)
 
 		summary_writer = tf.summary.FileWriter(train_dir, sess.graph)
 		j = 0
