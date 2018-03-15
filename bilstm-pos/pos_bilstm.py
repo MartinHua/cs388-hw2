@@ -305,6 +305,7 @@ def train(sentence_words_train, sentence_tags_train, sentence_features_train, se
 				if j % CHECKPOINT_FREQUENCY == 0:
 					checkpoint_path = os.path.join(train_dir, 'model.ckpt')
 					saver.save(sess, checkpoint_path, global_step=j)
+				print duration
 
 ## Check performance on held out test data
 ## Loads most recent model from train_dir
