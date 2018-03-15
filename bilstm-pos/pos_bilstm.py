@@ -297,6 +297,7 @@ def train(sentence_words_train, sentence_tags_train, sentence_features_train, se
 					summary.value.add(tag='Validation Loss', simple_value=val_loss)
 					summary.value.add(tag='Validation Accuracy', simple_value=val_accuracy)
 					summary.value.add(tag='Validation OOV Accuracy', simple_value=val_oov_accuracy)
+					summary.value.add(tag='Training Time', simple_value=duration)
 					summary_writer.add_summary(summary, j)
 					log_string = '{} batches ====> Validation Accuracy {:.3f}, Validation Loss {:.3f}, Validation OOV Accuracy {:.3f}, Training time {:.3f}'
 					print log_string.format(j, val_accuracy, val_loss, val_oov_accuracy, duration)
