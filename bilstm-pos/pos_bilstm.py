@@ -98,11 +98,13 @@ class Model:
 		with tf.variable_scope("lstm_output"):
 			## concat forward and backward states
 			outputs = tf.concat(outputs, 2)
+
+			if add_feature_type == "output":
+				outputs = tf.concat([outputs, tf.cast(self._input_features, tf.float32)], 2)
+			
 			c = tf.shape(outputs)
 			sess = tf.Session()  
 			print(sess.run(c))
-			# if add_feature_type == "output":
-
 			## Apply linear transformation to get logits(unnormalized scores)
 			logits = self.compute_logits(outputs)
 
@@ -127,7 +129,7 @@ class Model:
 		return tf.Variable(weight, name='weight'), tf.Variable(bias, name='bias')
 
 	# Taken from https://github.com/monikkinom/ner-lstm/blob/master/model.py __init__ function
-	def compute_logits(self, outputs, add_feature_type):
+	def compute_logits(self, outputs):
 		softmax_input_size = int(outputs.get_shape()[2])
 		outputs = tf.reshape(outputs, [-1, softmax_input_size])
 		
