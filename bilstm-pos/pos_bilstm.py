@@ -297,15 +297,15 @@ def train(sentence_words_train, sentence_tags_train, sentence_features_train, se
 					summary.value.add(tag='Validation Accuracy', simple_value=val_accuracy)
 					summary.value.add(tag='Validation OOV Accuracy', simple_value=val_oov_accuracy)
 					summary_writer.add_summary(summary, j)
-					log_string = '{} batches ====> Validation Accuracy {:.3f}, Validation Loss {:.3f}, Validation OOV Accuracy {:.3f}'
-					print log_string.format(j, val_accuracy, val_loss, val_oov_accuracy)
+					log_string = '{} batches ====> Validation Accuracy {:.3f}, Validation Loss {:.3f}, Validation OOV Accuracy {:.3f}, Training time {:.3f}'
+					print log_string.format(j, val_accuracy, val_loss, val_oov_accuracy, duration)
 				else:
 					summary_writer.add_summary(summary_value, j)
 
 				if j % CHECKPOINT_FREQUENCY == 0:
 					checkpoint_path = os.path.join(train_dir, 'model.ckpt')
 					saver.save(sess, checkpoint_path, global_step=j)
-				print duration
+				
 
 ## Check performance on held out test data
 ## Loads most recent model from train_dir
