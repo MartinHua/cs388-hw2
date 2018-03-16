@@ -10,7 +10,7 @@ AUTHOR
 -------------------------------
 EXECUTING CODE FOR TESTING
 -------------------------------
-1. After you unzip the project folder I sent you navigate to project path in command line: cd /"path to project folder"/xinrui_hua_xh3426/
+1. After you unzip the project folder I sent you navigate to project path in command line: cd /"path to project folder"/xinrui_hua_xh3426/cs388-hw2/
 2. Run in command line: 
    For training:
    baseline: python ./bilstm-pos/pos_bilstm.py /projects/nlp/penn-treebank3/tagged/pos/wsj ./baseline standard train normal
